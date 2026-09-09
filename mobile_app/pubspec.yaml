@@ -1,0 +1,81 @@
+name: prosim_planat
+description: "Prosim Planat — plateforme de transport routier de marchandises"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State management
+  provider: ^6.1.2
+
+  # Networking
+  dio: ^5.7.0
+  socket_io_client: ^2.0.3+1
+
+  # Local storage / offline queue
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  shared_preferences: ^2.3.3
+  connectivity_plus: ^6.1.0
+
+  # Maps & location
+  google_maps_flutter: ^2.9.0
+  geolocator: ^13.0.1
+  geocoding: ^3.0.0
+
+  # i18n
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.19.0
+
+  # Media & signature
+  image_picker: ^1.1.2
+  signature: ^5.5.0
+  cached_network_image: ^3.4.1
+  photo_view: ^0.15.0
+
+  # Utilities
+  fl_chart: ^0.69.0
+  intl_phone_field: ^3.2.0
+  url_launcher: ^6.3.1
+  path_provider: ^2.1.5
+  flutter_svg: ^2.0.10+1
+  timeago: ^3.7.0
+  uuid: ^4.5.1
+  jwt_decoder: ^2.0.1
+  flutter_local_notifications: ^18.0.1
+  logger: ^2.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  fonts:
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
+    # Archivo is shipped as a single variable font (wdth,wght axes); Flutter renders it
+    # at its default instance. Swap in static weight-specific files later if needed.
+    - family: ArchivoCondensed
+      fonts:
+        - asset: assets/fonts/Archivo-Regular.ttf
