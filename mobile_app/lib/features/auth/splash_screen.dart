@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
-import '../shipper/shipper_home.dart';
-import '../carrier/carrier_home.dart';
-import '../driver/driver_home.dart';
-import '../admin/admin_home.dart';
-import 'login_screen.dart';
-import 'pending_approval_screen.dart';
+import 'auth_gate.dart';
 
+/// Branded launch screen: logo mark reveal + a minimum on-screen time so the
+/// transition never feels like a flicker, even when session restore is instant.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -16,62 +11,81 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+  late final Animation<double> _fade;
+
   @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthService>();
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+    _scale = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+    _fade = CurvedAnimation(parent: _controller, curve: const Interval(0, 0.6, curve: Curves.easeOut));
+    _controller.forward();
 
-    if (auth.isLoading) {
-      return const _SplashBody();
-    }
-
-    if (!auth.isLoggedIn) {
-      return const LoginScreen();
-    }
-
-    final user = auth.currentUser!;
-    if (user.status == 'pending' || user.status == 'rejected') {
-      return const PendingApprovalScreen();
-    }
-
-    switch (user.role) {
-      case 'shipper':
-        return const ShipperHome();
-      case 'carrier':
-        return const CarrierHome();
-      case 'driver':
-        return const DriverHome();
-      case 'admin':
-        return const AdminHome();
-      default:
-        return const LoginScreen();
-    }
+    Future.delayed(const Duration(milliseconds: 1400), () {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 500),
+          pageBuilder: (_, animation, __) => FadeTransition(opacity: animation, child: const AuthGate()),
+        ),
+      );
+    });
   }
-}
 
-class _SplashBody extends StatelessWidget {
-  const _SplashBody();
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppColors.bitume,
+    return Scaffold(
+      backgroundColor: AppColors.white,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'PP',
-              style: TextStyle(
-                color: AppColors.sangle,
-                fontSize: 40,
-                fontWeight: FontWeight.w800,
+            ScaleTransition(
+              scale: _scale,
+              child: FadeTransition(
+                opacity: _fade,
+                child: Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: AppColors.sangle,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.sangle.withValues(alpha: 0.35),
+                        blurRadius: 30,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.local_shipping_rounded, color: AppColors.white, size: 44),
+                ),
               ),
             ),
-            SizedBox(height: 8),
-            Text(
-              'PROSIM PLANAT',
-              style: TextStyle(color: AppColors.white, fontSize: 12, letterSpacing: 4),
+            const SizedBox(height: 24),
+            FadeTransition(
+              opacity: _fade,
+              child: const Text(
+                'Prosim Planat',
+                style: TextStyle(color: AppColors.bitume, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+              ),
+            ),
+            const SizedBox(height: 6),
+            FadeTransition(
+              opacity: _fade,
+              child: const Text(
+                'TRANSPORT & LOGISTIQUE',
+                style: TextStyle(color: AppColors.acier, fontSize: 11.5, fontWeight: FontWeight.w700, letterSpacing: 2.5),
+              ),
             ),
           ],
         ),

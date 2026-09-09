@@ -64,7 +64,49 @@ const verifyOtp = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc Admin/staff login with password
+// @desc Register a new account with phone + password (replaces OTP signup)
+// @route POST /api/auth/register
+const register = asyncHandler(async (req, res) => {
+  const { phone, password, role, fullName, companyName } = req.body;
+
+  if (!phone || !password || !role) {
+    res.status(400);
+    throw new Error('Phone, password and role are required');
+  }
+  if (password.length < 6) {
+    res.status(400);
+    throw new Error('Password must be at least 6 characters');
+  }
+  if (!['shipper', 'carrier', 'driver'].includes(role)) {
+    res.status(400);
+    throw new Error('Invalid role');
+  }
+
+  const existing = await User.findOne({ phone });
+  if (existing) {
+    res.status(409);
+    throw new Error('An account with this phone number already exists');
+  }
+
+  const user = await User.create({
+    phone,
+    password,
+    role,
+    fullName,
+    companyName,
+    // shipper/carrier need admin approval before their first request (EXP-04); driver is active immediately.
+    status: role === 'driver' ? 'active' : 'pending',
+  });
+
+  await logAction({ actorId: user._id, actorRole: role, action: 'account_created' });
+
+  res.status(201).json({
+    token: generateToken(user._id, user.role),
+    user: user.toSafeJSON(),
+  });
+});
+
+// @desc Login with phone + password
 // @route POST /api/auth/login
 const login = asyncHandler(async (req, res) => {
   const { phone, password } = req.body;
@@ -86,4 +128,4 @@ const getMe = asyncHandler(async (req, res) => {
   res.json(req.user.toSafeJSON());
 });
 
-module.exports = { requestOtp, verifyOtp, login, getMe };
+module.exports = { requestOtp, verifyOtp, register, login, getMe };

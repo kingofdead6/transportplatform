@@ -7,12 +7,16 @@ plugins {
 
 android {
     namespace = "com.prosimplanat.app"
-    compileSdk = flutter.compileSdkVersion
+    // Pinned explicitly: geocoding_android/androidx deps require compileSdk >= 34,
+    // but this machine's cached Android SDK resolves flutter.compileSdkVersion to 33.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Required by flutter_local_notifications (uses java.time APIs on API < 26).
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -40,4 +44,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

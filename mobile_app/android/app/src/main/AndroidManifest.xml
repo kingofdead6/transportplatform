@@ -19,10 +19,9 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- Replace with a real Google Maps API key before release (google_maps_flutter). -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_GOOGLE_MAPS_API_KEY_HERE" />
+            android:value="AIzaSyAzeZ1acHKBoTietgT5t4jdeWXpMymSqcA" />
 
         <activity
             android:name=".MainActivity"

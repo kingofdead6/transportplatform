@@ -1,19 +1,27 @@
 import 'package:flutter/widgets.dart';
 
-/// Section 11.2 — palette. One accent color ("Sangle") per screen for the primary action.
-/// Never mix Sangle (action) with Convoi/Halte (status) on the same element.
+/// Clean, light, minimal palette. One accent color ("Sangle") per screen for the
+/// primary action — status colors (Convoi/Halte) are reserved for state, never actions.
 class AppColors {
   AppColors._();
 
-  static const bitume = Color(0xFF16222A); // dark ground, nav, primary text
-  static const acier = Color(0xFF3E5261); // secondary text, borders, inactive icons
-  static const beton = Color(0xFFF1F3F4); // screen background
-  static const sangle = Color(0xFFF2A81D); // action color — one CTA per screen
-  static const convoi = Color(0xFF1E7A4F); // delivered / paid / validated / available
-  static const halte = Color(0xFFC6382E); // delay / dispute / expired / cancel
+  // Ink — primary text, headings, nav bar. A soft near-black, not pure black.
+  static const bitume = Color(0xFF1A2027);
+  // Secondary text, borders, inactive icons.
+  static const acier = Color(0xFF8A93A0);
+  // Screen background — warm off-white, not stark white.
+  static const beton = Color(0xFFF7F8FA);
+  // Accent — the one CTA color per screen.
+  static const sangle = Color(0xFFFF8A34);
+  // Success / delivered / paid / available.
+  static const convoi = Color(0xFF17A673);
+  // Delay / dispute / expired / cancel.
+  static const halte = Color(0xFFE5484D);
 
   static const white = Color(0xFFFFFFFF);
-  static const overlay = Color(0x1416222A);
+  static const overlay = Color(0x0A1A2027);
+  static const border = Color(0xFFE9EBEF);
+  static const surfaceAlt = Color(0xFFEFF1F4);
 
   static Color statusColor(String status) {
     switch (status) {

@@ -44,6 +44,23 @@ class AuthService extends ChangeNotifier {
     await _persistSession(res.data['token'], res.data['user']);
   }
 
+  Future<void> register({
+    required String phone,
+    required String password,
+    required String role,
+    String? fullName,
+    String? companyName,
+  }) async {
+    final res = await ApiClient.instance.post('/auth/register', data: {
+      'phone': phone,
+      'password': password,
+      'role': role,
+      if (fullName != null) 'fullName': fullName,
+      if (companyName != null) 'companyName': companyName,
+    });
+    await _persistSession(res.data['token'], res.data['user']);
+  }
+
   Future<void> _persistSession(String token, Map<String, dynamic> userJson) async {
     _token = token;
     currentUser = AppUser.fromJson(userJson);

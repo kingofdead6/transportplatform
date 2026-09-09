@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/locale_service.dart';
-import '../../core/theme/app_colors.dart';
 import 'trip_list_screen.dart';
 import 'new_trip_screen.dart';
 import 'invoices_screen.dart';
@@ -64,10 +63,6 @@ class _ShipperHomeState extends State<ShipperHome> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.bitume,
-        selectedItemColor: AppColors.sangle,
-        unselectedItemColor: AppColors.white.withValues(alpha: 0.6),
         showUnselectedLabels: true,
         items: [
           BottomNavigationBarItem(
