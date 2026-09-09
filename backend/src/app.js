@@ -19,6 +19,10 @@ const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 
+// Render (and most PaaS hosts) sit behind a single reverse proxy hop; trusting it
+// lets Express read the real client IP from X-Forwarded-For for rate limiting.
+app.set('trust proxy', 1);
+
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
