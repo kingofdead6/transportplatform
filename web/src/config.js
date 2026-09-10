@@ -15,10 +15,7 @@ export const config = {
   apkVersion: '1.0.0',
   apkSizeMb: null, // e.g. 24 — shown next to the download button when set
 
-  // ---- Secondary links ---------------------------------------------------
-  repoUrl: 'https://github.com/kingofdead6/transportplatform',
-  apiHealthUrl: 'https://transportplatform.onrender.com/api/health',
-  contactEmail: 'contact@prosimplanat.dz',
+
 };
 
 export const isPlaceholder = (url) => !url || url === '#';
