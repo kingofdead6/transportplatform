@@ -365,15 +365,7 @@ function Download() {
 
           <div className="download__cta">
             <DownloadButton />
-            <a
-              className="btn btn--ghost"
-              href={config.repoUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              <Icon name="code" size={17} />
-              Voir le code source
-            </a>
+          
           </div>
 
           <p className="download__meta">
