@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/widgets/notifications_screen.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/locale_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -55,6 +56,7 @@ class _AdminHomeState extends State<AdminHome> {
     final appBar = AppBar(
       title: Text(tr(context, 'app_name')),
       actions: [
+        const NotificationBell(),
         if (user?.adminSubRole == 'lecture')
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import '../network/api_client.dart';
+import 'socket_service.dart';
 
 class AuthService extends ChangeNotifier {
   AppUser? currentUser;
@@ -11,13 +11,28 @@ class AuthService extends ChangeNotifier {
   bool get isLoggedIn => currentUser != null && _token != null;
   String? get token => _token;
 
+  /// True once the account is approved and may use the app for real.
+  bool get isApproved => currentUser?.status == 'active';
+
   Future<void> bootstrap() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('auth_token');
+    // A 401 on any later request means the stored session is dead; drop it and
+    // return to the login screen rather than showing empty screens forever.
+    ApiClient.instance.onUnauthorized = () {
+      if (isLoggedIn) logout();
+    };
+
+    _token = await ApiClient.instance.readToken();
     if (_token != null) {
       try {
         final res = await ApiClient.instance.get('/auth/me');
         currentUser = AppUser.fromJson(res.data);
+        _connectSocket();
+      } on ApiException catch (e) {
+        // Keep the session on a transient network failure — only a real
+        // rejection from the server should sign the user out.
+        if (!e.isNetworkError) {
+          await logout();
+        }
       } catch (_) {
         await logout();
       }
@@ -40,7 +55,8 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> loginWithPassword({required String phone, required String password}) async {
-    final res = await ApiClient.instance.post('/auth/login', data: {'phone': phone, 'password': password});
+    final res = await ApiClient.instance
+        .post('/auth/login', data: {'phone': phone, 'password': password});
     await _persistSession(res.data['token'], res.data['user']);
   }
 
@@ -61,12 +77,30 @@ class AuthService extends ChangeNotifier {
     await _persistSession(res.data['token'], res.data['user']);
   }
 
+  Future<void> changePassword({String? currentPassword, required String newPassword}) async {
+    await ApiClient.instance.put('/users/me/password', data: {
+      if (currentPassword != null) 'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    });
+  }
+
+  Future<void> updateProfile(Map<String, dynamic> body) async {
+    final res = await ApiClient.instance.put('/users/me', data: body);
+    currentUser = AppUser.fromJson(res.data);
+    notifyListeners();
+  }
+
   Future<void> _persistSession(String token, Map<String, dynamic> userJson) async {
     _token = token;
     currentUser = AppUser.fromJson(userJson);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
+    await ApiClient.instance.setToken(token);
+    _connectSocket();
     notifyListeners();
+  }
+
+  void _connectSocket() {
+    final token = _token;
+    if (token != null) SocketService.instance.connect(token);
   }
 
   Future<void> refreshMe() async {
@@ -78,8 +112,9 @@ class AuthService extends ChangeNotifier {
   Future<void> logout() async {
     _token = null;
     currentUser = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
+    // The socket carries the old identity — it must go down with the session.
+    SocketService.instance.disconnect();
+    await ApiClient.instance.setToken(null);
     notifyListeners();
   }
 }

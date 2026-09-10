@@ -9,6 +9,7 @@ import '../../core/network/api_client.dart';
 import '../../core/services/socket_service.dart';
 import '../../core/services/trip_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import 'mission_action_button.dart';
 
 /// CHA-08: proof-of-delivery — photo of the signed slip + on-screen signature +
@@ -102,8 +103,12 @@ class _PodScreenState extends State<PodScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      // Show why it failed (e.g. photos rejected, wrong status) instead of a
+      // generic message the driver cannot act on.
+      if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = tr(context, 'error_generic'));
+      if (mounted) setState(() => _error = tr(context, 'error_generic'));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -130,7 +135,7 @@ class _PodScreenState extends State<PodScreen> {
                 children: [
                   for (final p in _photos)
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                       child: Image.file(File(p.path), width: 84, height: 84, fit: BoxFit.cover),
                     ),
                   InkWell(
@@ -140,7 +145,7 @@ class _PodScreenState extends State<PodScreen> {
                       height: 84,
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                         border: Border.all(color: AppColors.acier),
                       ),
                       child: const Icon(Icons.camera_alt_outlined, color: AppColors.acier, size: 28),
@@ -170,7 +175,7 @@ class _PodScreenState extends State<PodScreen> {
                 height: 200,
                 decoration: BoxDecoration(
                   color: AppColors.white,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   border: Border.all(color: AppColors.acier),
                 ),
                 child: Stack(

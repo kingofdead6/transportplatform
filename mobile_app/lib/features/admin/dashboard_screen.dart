@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import 'widgets/stat_tile.dart';
 
 /// Dashboard tab: GET /api/reports/summary?period=month stat tiles +
@@ -173,7 +174,7 @@ class _AlertBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.halte.withValues(alpha: 0.1),
         border: Border.all(color: AppColors.halte.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Row(
         children: [

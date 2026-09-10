@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/empty_state.dart';
 import 'models/vehicle.dart';
 import 'add_driver_screen.dart';
@@ -95,8 +96,11 @@ class _DriverCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: flagged ? AppColors.halte.withValues(alpha: 0.5) : const Color(0xFFE2E6E8)),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        boxShadow: AppTheme.softShadow,
+        border: flagged
+            ? Border.all(color: AppColors.halte.withValues(alpha: 0.5))
+            : null,
       ),
       padding: const EdgeInsets.all(14),
       child: Row(

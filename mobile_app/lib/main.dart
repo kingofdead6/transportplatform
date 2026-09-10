@@ -7,7 +7,7 @@ import 'core/l10n/app_strings.dart';
 import 'core/network/offline_queue.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/locale_service.dart';
-import 'core/services/socket_service.dart';
+import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/splash_screen.dart';
 
@@ -26,14 +26,16 @@ class ProsimPlanatApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // The socket is connected by AuthService when a session is established,
+        // never from build() — doing it here tore down and rebuilt the
+        // connection on every rebuild.
         ChangeNotifierProvider(create: (_) => AuthService()..bootstrap()),
         ChangeNotifierProvider(create: (_) => LocaleService()..bootstrap()),
+        ChangeNotifierProvider.value(value: OfflineQueue.instance),
+        ChangeNotifierProvider(create: (_) => NotificationService()),
       ],
-      child: Consumer2<AuthService, LocaleService>(
-        builder: (context, auth, localeService, _) {
-          if (auth.isLoggedIn && auth.token != null) {
-            SocketService.instance.connect(auth.token!);
-          }
+      child: Consumer<LocaleService>(
+        builder: (context, localeService, _) {
           return AppStrings(
             locale: localeService.locale,
             child: MaterialApp(

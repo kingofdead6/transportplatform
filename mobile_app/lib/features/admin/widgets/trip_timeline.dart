@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/models/trip.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// Simple horizontal-free stepper over tripLifecycleOrder: past steps get a
 /// convoi check, current step is highlighted sangle, future steps are acier/grey.
@@ -18,7 +19,7 @@ class TripTimeline extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppColors.halte.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Text(
           tr(context, 'status_$status'),

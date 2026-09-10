@@ -37,4 +37,9 @@ const invoiceSchema = new Schema(
   { timestamps: true }
 );
 
+invoiceSchema.index({ shipperId: 1, createdAt: -1 });
+invoiceSchema.index({ carrierId: 1, createdAt: -1 });
+invoiceSchema.index({ status: 1, dueDate: 1 });
+invoiceSchema.index({ tripId: 1 });
+
 module.exports = mongoose.model('Invoice', invoiceSchema);

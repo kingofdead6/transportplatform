@@ -3,6 +3,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/models/trip.dart';
 import '../../core/services/trip_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/trip_card.dart';
 import 'trip_detail_screen.dart';
@@ -58,7 +59,7 @@ class _ReturnLoadsScreenState extends State<ReturnLoadsScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.sangle.withValues(alpha: 0.12),
                     border: Border.all(color: AppColors.sangle.withValues(alpha: 0.4)),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Row(
                     children: [

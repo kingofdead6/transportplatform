@@ -6,6 +6,7 @@ import '../../core/models/trip.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/trip_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/status_badge.dart';
 import 'trip_list_screen.dart' show StatusLabels;
 
@@ -43,21 +44,22 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       final trip = await _tripService.getTrip(widget.tripId);
       List<dynamic> docs = [];
       try {
-        final res = await ApiClient.instance.get('/trips/${widget.tripId}/documents');
-        docs = res.data is List ? res.data as List : (res.data['documents'] as List? ?? []);
+        docs = await _tripService.listDocuments(widget.tripId);
       } catch (_) {
         // Documents endpoint failing shouldn't block showing the trip itself.
       }
+      if (!mounted) return;
       setState(() {
         _trip = trip;
         _documents = docs;
+        _loading = false;
       });
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
-    } catch (e) {
-      setState(() => _error = e.toString());
-    } finally {
-      setState(() => _loading = false);
+      if (!mounted) return;
+      setState(() {
+        _error = e.message;
+        _loading = false;
+      });
     }
   }
 
@@ -143,11 +145,16 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           _LifecycleStepper(status: trip.status),
           const SizedBox(height: 24),
           _InfoCard(trip: trip),
-          if (trip.status == 'published' || trip.status == 'offers_received') ...[
+          // Offers stay visible after assignment so the shipper can still see
+          // which carrier won and at what price.
+          if (trip.offers.isNotEmpty ||
+              trip.status == 'published' ||
+              trip.status == 'offers_received') ...[
             const SizedBox(height: 24),
             _OffersSection(
               offers: trip.offers,
               busy: _actionBusy,
+              selectable: trip.status == 'published' || trip.status == 'offers_received',
               onAccept: _acceptOffer,
             ),
           ],
@@ -158,7 +165,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               child: Text(tr(context, 'confirm_receipt')),
             ),
           ],
-          if (trip.status == 'pod_confirmed') ...[
+          if (!trip.hasReview &&
+              const ['delivered', 'pod_confirmed', 'invoiced', 'paid', 'closed']
+                  .contains(trip.status)) ...[
             const SizedBox(height: 24),
             _ReviewForm(tripId: trip.id, onSubmitted: _load),
           ],
@@ -300,11 +309,19 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _OffersSection extends StatelessWidget {
-  const _OffersSection({required this.offers, required this.busy, required this.onAccept});
+  const _OffersSection({
+    required this.offers,
+    required this.busy,
+    required this.onAccept,
+    this.selectable = true,
+  });
 
   final List<TripOffer> offers;
   final bool busy;
   final ValueChanged<TripOffer> onAccept;
+
+  /// False once the trip is awarded: offers become a read-only record.
+  final bool selectable;
 
   @override
   Widget build(BuildContext context) {
@@ -341,7 +358,7 @@ class _OffersSection extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (offer.status == 'pending')
+                    if (selectable && offer.status == 'pending')
                       OutlinedButton(
                         onPressed: busy ? null : () => onAccept(offer),
                         child: Text(tr(context, 'accept_offer')),
@@ -477,7 +494,7 @@ class _MapPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final position = LatLng(location.lat!, location.lng!);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       child: SizedBox(
         height: 180,
         child: GoogleMap(

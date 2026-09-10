@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/widgets/change_password_sheet.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -141,6 +142,12 @@ class _CarrierProfileScreenState extends State<CarrierProfileScreen> {
           child: _loading
               ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
               : Text(tr(context, 'save')),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => ChangePasswordSheet.show(context),
+          icon: const Icon(Icons.lock_outline_rounded, size: 18),
+          label: Text(tr(context, 'change_password')),
         ),
       ],
     );

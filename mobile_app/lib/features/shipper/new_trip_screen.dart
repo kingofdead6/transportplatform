@@ -7,6 +7,7 @@ import '../../core/models/trip.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/trip_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 
 /// Section 5.1: shipper trip-creation form. Single scrollable form per spec.
 /// Publish is the one sangle CTA; "save as draft" is a secondary outlined action.
@@ -181,7 +182,7 @@ class _NewTripScreenState extends State<NewTripScreen> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              value: _pickupWilaya,
+              initialValue: _pickupWilaya,
               decoration: InputDecoration(labelText: tr(context, 'wilaya')),
               items: algeriaWilayas
                   .map((w) => DropdownMenuItem(value: w, child: Text(w)))
@@ -199,7 +200,7 @@ class _NewTripScreenState extends State<NewTripScreen> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              value: _dropoffWilaya,
+              initialValue: _dropoffWilaya,
               decoration: InputDecoration(labelText: tr(context, 'wilaya')),
               items: algeriaWilayas
                   .map((w) => DropdownMenuItem(value: w, child: Text(w)))
@@ -211,7 +212,7 @@ class _NewTripScreenState extends State<NewTripScreen> {
             _SectionTitle(tr(context, 'goods_details')),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _goodsType,
+              initialValue: _goodsType,
               decoration: InputDecoration(labelText: tr(context, 'goods_type')),
               items: goodsTypes
                   .map((g) => DropdownMenuItem(value: g, child: Text(tr(context, 'goods_$g'))))
@@ -253,7 +254,7 @@ class _NewTripScreenState extends State<NewTripScreen> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              value: _vehicleType,
+              initialValue: _vehicleType,
               decoration: InputDecoration(labelText: tr(context, 'vehicle_type')),
               items: vehicleTypes
                   .map((v) => DropdownMenuItem(value: v, child: Text(tr(context, 'vehicle_$v'))))
@@ -340,7 +341,7 @@ class _NewTripScreenState extends State<NewTripScreen> {
               children: [
                 for (final photo in _photos)
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                     child: Image.file(File(photo.path), width: 72, height: 72, fit: BoxFit.cover),
                   ),
                 InkWell(
@@ -350,7 +351,7 @@ class _NewTripScreenState extends State<NewTripScreen> {
                     height: 72,
                     decoration: BoxDecoration(
                       border: Border.all(color: AppColors.acier),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                     ),
                     child: const Icon(Icons.add_a_photo_outlined, color: AppColors.acier),
                   ),
@@ -413,14 +414,14 @@ class _PricingModeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? AppColors.sangle.withValues(alpha: 0.15) : AppColors.white,
           border: Border.all(color: selected ? AppColors.sangle : AppColors.acier, width: selected ? 2 : 1),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Text(
           label,

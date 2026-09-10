@@ -6,8 +6,10 @@ import '../../core/network/api_client.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/trip_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/status_badge.dart';
 import 'dispute_detail_screen.dart';
+import 'widgets/entity_picker.dart';
 import 'widgets/trip_timeline.dart';
 
 /// Trip detail (ADM-01..08): full info, timeline, offers, assign/reassign,
@@ -23,10 +25,9 @@ class TripDetailScreen extends StatefulWidget {
 class _TripDetailScreenState extends State<TripDetailScreen> {
   final _tripService = TripService();
   Trip? _trip;
-  Map<String, dynamic>? _raw;
   bool _loading = true;
+  bool _busy = false;
   String? _error;
-  List<dynamic> _incidents = const [];
 
   @override
   void initState() {
@@ -40,17 +41,16 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       _error = null;
     });
     try {
-      final res = await ApiClient.instance.get('/trips/${widget.tripId}');
-      final data = res.data as Map<String, dynamic>;
+      final trip = await _tripService.getTrip(widget.tripId);
+      if (!mounted) return;
       setState(() {
-        _raw = data;
-        _trip = Trip.fromJson(data);
-        _incidents = data['incidents'] as List? ?? const [];
+        _trip = trip;
         _loading = false;
       });
-    } catch (e) {
+    } on ApiException catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = tr(context, 'error_generic');
+        _error = e.message;
         _loading = false;
       });
     }
@@ -58,39 +58,83 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
   bool get _readOnly => context.read<AuthService>().currentUser?.adminSubRole == 'lecture';
 
-  Future<void> _assignOffer(TripOffer offer) async {
+  Future<void> _run(Future<void> Function() action, {String? successKey}) async {
+    if (_busy) return;
+    setState(() => _busy = true);
     try {
-      await _tripService.assignCarrier(widget.tripId, {'offerId': offer.id});
-      if (mounted) _load();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr(context, 'error_generic'))));
+      await action();
+      if (!mounted) return;
+      if (successKey != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(tr(context, successKey))));
       }
+      await _load();
+    } on ApiException catch (e) {
+      if (mounted) {
+        // Surface the server's actual reason instead of a generic message.
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
+  Future<void> _assignOffer(TripOffer offer) =>
+      _run(() => _tripService.assignCarrier(widget.tripId, {'offerId': offer.id}));
+
+  Future<void> _issueInvoice() => _run(
+        () => ApiClient.instance.post('/trips/${widget.tripId}/invoice'),
+        successKey: 'invoice_issued',
+      );
+
   Future<void> _openManualAssign() async {
-    await showDialog(context: context, builder: (_) => _ManualAssignDialog(tripId: widget.tripId));
-    _load();
+    final done = await showDialog<bool>(
+      context: context,
+      builder: (_) => _ManualAssignDialog(tripId: widget.tripId),
+    );
+    if (done == true) _load();
   }
 
   Future<void> _openReassign() async {
-    await showDialog(context: context, builder: (_) => _ReassignDialog(tripId: widget.tripId));
-    _load();
+    final done = await showDialog<bool>(
+      context: context,
+      builder: (_) => _ReassignDialog(tripId: widget.tripId),
+    );
+    if (done == true) _load();
   }
 
-  Future<void> _issueInvoice() async {
-    try {
-      await ApiClient.instance.post('/trips/${widget.tripId}/invoice');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr(context, 'invoice_issued'))));
-        _load();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr(context, 'error_generic'))));
-      }
-    }
+  Future<void> _cancelTrip() async {
+    final reasonCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr(context, 'cancel_trip')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(tr(context, 'cancel_trip_confirm')),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonCtrl,
+              decoration: InputDecoration(labelText: tr(context, 'cancel_reason')),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr(context, 'cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.halte),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(tr(context, 'confirm')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _run(
+      () => _tripService.cancelTrip(widget.tripId, reason: reasonCtrl.text.trim()),
+      successKey: 'trip_cancelled',
+    );
   }
 
   @override
@@ -99,12 +143,12 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       appBar: AppBar(title: Text(_trip?.reference ?? tr(context, 'trip_details'))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
+          : (_error != null || _trip == null)
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error!),
+                      Text(_error ?? ''),
                       const SizedBox(height: 8),
                       OutlinedButton(onPressed: _load, child: Text(tr(context, 'retry'))),
                     ],
@@ -116,7 +160,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
   Widget _buildBody(BuildContext context) {
     final trip = _trip!;
-    final disputeId = _raw?['disputeId'];
+    final canCancel = !['delivered', 'pod_confirmed', 'invoiced', 'paid', 'closed', 'cancelled']
+        .contains(trip.status);
+
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -138,47 +184,78 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           const SizedBox(height: 8),
           TripTimeline(status: trip.status),
           const SizedBox(height: 20),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _infoRow(tr(context, 'goods_type'), trip.goodsType ?? '-'),
-                  _infoRow(tr(context, 'weight_kg'), trip.weightKg?.toStringAsFixed(0) ?? '-'),
-                  _infoRow(tr(context, 'vehicle_type'), trip.vehicleTypeRequired ?? '-'),
-                  _infoRow('Shipper', trip.shipperName ?? '-'),
-                  _infoRow(tr(context, 'assigned_carrier'), trip.carrierName ?? '-'),
-                  if (trip.agreedPrice != null) _infoRow(tr(context, 'agreed_price'), '${trip.agreedPrice!.toStringAsFixed(0)} DA'),
-                  if (trip.commissionAmount != null) _infoRow(tr(context, 'commission'), '${trip.commissionAmount!.toStringAsFixed(0)} DA'),
-                  if ((trip.specialInstructions ?? '').isNotEmpty)
-                    _infoRow(tr(context, 'special_instructions'), trip.specialInstructions!),
-                ],
-              ),
+
+          _Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _infoRow(tr(context, 'goods_type'),
+                    trip.goodsType != null ? tr(context, 'goods_${trip.goodsType}') : '-'),
+                _infoRow(tr(context, 'weight_kg'), trip.weightKg?.toStringAsFixed(0) ?? '-'),
+                _infoRow(
+                    tr(context, 'vehicle_type'),
+                    trip.vehicleTypeRequired != null
+                        ? tr(context, 'vehicle_${trip.vehicleTypeRequired}')
+                        : '-'),
+                _infoRow(tr(context, 'role_shipper'), trip.shipperName ?? '-'),
+                _infoRow(tr(context, 'assigned_carrier'), trip.carrierName ?? '-'),
+                if (trip.driverName != null)
+                  _infoRow(tr(context, 'role_driver'), trip.driverName!),
+                if (trip.agreedPrice != null)
+                  _infoRow(tr(context, 'agreed_price'),
+                      '${trip.agreedPrice!.toStringAsFixed(0)} DA'),
+                if (trip.commissionAmount != null)
+                  _infoRow(tr(context, 'commission'),
+                      '${trip.commissionAmount!.toStringAsFixed(0)} DA'),
+                if ((trip.specialInstructions ?? '').isNotEmpty)
+                  _infoRow(tr(context, 'special_instructions'), trip.specialInstructions!),
+              ],
             ),
           ),
+
           const SizedBox(height: 20),
           Text(tr(context, 'offers_received'), style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           if (trip.offers.isEmpty)
             Padding(
               padding: const EdgeInsets.all(8),
-              child: Text(tr(context, 'no_offers_yet'), style: const TextStyle(color: AppColors.acier)),
+              child:
+                  Text(tr(context, 'no_offers_yet'), style: const TextStyle(color: AppColors.acier)),
             )
           else
             for (final offer in trip.offers)
-              Card(
-                child: ListTile(
-                  title: Text('${offer.price.toStringAsFixed(0)} DA'),
-                  subtitle: Text('${offer.carrierId} · ${offer.status}'),
-                  trailing: (!_readOnly && offer.status == 'pending')
-                      ? TextButton(
-                          onPressed: () => _assignOffer(offer),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _Card(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${offer.price.toStringAsFixed(0)} DA',
+                              style: const TextStyle(
+                                fontFamily: 'ArchivoCondensed',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 17,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            StatusBadge(status: offer.status, compact: true),
+                          ],
+                        ),
+                      ),
+                      if (!_readOnly && offer.status == 'pending')
+                        OutlinedButton(
+                          onPressed: _busy ? null : () => _assignOffer(offer),
                           child: Text(tr(context, 'assign_offer')),
-                        )
-                      : null,
+                        ),
+                    ],
+                  ),
                 ),
               ),
+
           const SizedBox(height: 20),
           if (!_readOnly)
             Wrap(
@@ -186,52 +263,96 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               runSpacing: 8,
               children: [
                 OutlinedButton.icon(
-                  onPressed: _openManualAssign,
+                  onPressed: _busy ? null : _openManualAssign,
                   icon: const Icon(Icons.person_add_alt),
                   label: Text(tr(context, 'assign_manually')),
                 ),
                 OutlinedButton.icon(
-                  onPressed: _openReassign,
+                  onPressed: _busy ? null : _openReassign,
                   icon: const Icon(Icons.swap_horiz),
                   label: Text(tr(context, 'reassign')),
                 ),
                 if (trip.status == 'pod_confirmed')
                   ElevatedButton.icon(
-                    onPressed: _issueInvoice,
+                    onPressed: _busy ? null : _issueInvoice,
                     icon: const Icon(Icons.receipt_long),
                     label: Text(tr(context, 'issue_invoice')),
                   ),
+                if (canCancel)
+                  OutlinedButton.icon(
+                    onPressed: _busy ? null : _cancelTrip,
+                    icon: const Icon(Icons.cancel_outlined, color: AppColors.halte),
+                    label: Text(
+                      tr(context, 'cancel_trip'),
+                      style: const TextStyle(color: AppColors.halte),
+                    ),
+                  ),
               ],
             ),
+
           const SizedBox(height: 24),
           Text(tr(context, 'incidents'), style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          if (_incidents.isEmpty)
+          // Reads trip.incidents, mapped from the backend's `incidentReports`.
+          // The screen previously looked for a field named `incidents`, so the
+          // list was always empty even when incidents existed.
+          if (trip.incidents.isEmpty)
             Padding(
               padding: const EdgeInsets.all(8),
-              child: Text(tr(context, 'no_incidents'), style: const TextStyle(color: AppColors.acier)),
+              child:
+                  Text(tr(context, 'no_incidents'), style: const TextStyle(color: AppColors.acier)),
             )
           else
-            for (final inc in _incidents)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.report_problem_outlined, color: AppColors.halte),
-                  title: Text(inc['type']?.toString() ?? ''),
-                  subtitle: Text(inc['note']?.toString() ?? ''),
+            for (final inc in trip.incidents)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _Card(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.report_problem_outlined, color: AppColors.halte),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tr(context, 'incident_${inc.type}') == 'incident_${inc.type}'
+                                  ? inc.type
+                                  : tr(context, 'incident_${inc.type}'),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            if ((inc.note ?? '').isNotEmpty)
+                              Text(inc.note!,
+                                  style: const TextStyle(color: AppColors.acier, fontSize: 13)),
+                            if (inc.reportedAt != null)
+                              Text(
+                                '${inc.reportedAt!.day}/${inc.reportedAt!.month}/${inc.reportedAt!.year}'
+                                ' ${inc.reportedAt!.hour.toString().padLeft(2, '0')}:'
+                                '${inc.reportedAt!.minute.toString().padLeft(2, '0')}',
+                                style: const TextStyle(color: AppColors.acier, fontSize: 11.5),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-          if (disputeId != null) ...[
+
+          if (trip.disputeId != null) ...[
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => DisputeDetailScreen(disputeId: disputeId.toString())),
-                );
-              },
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => DisputeDetailScreen(disputeId: trip.disputeId!),
+                ),
+              ),
               icon: const Icon(Icons.gavel_outlined),
               label: Text(tr(context, 'dispute_link')),
             ),
           ],
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -243,7 +364,10 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 140, child: Text(label, style: const TextStyle(color: AppColors.acier, fontSize: 13))),
+          SizedBox(
+            width: 140,
+            child: Text(label, style: const TextStyle(color: AppColors.acier, fontSize: 13)),
+          ),
           Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600))),
         ],
       ),
@@ -251,6 +375,26 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   }
 }
 
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Direct assignment. Carrier is chosen from a real list rather than typed as
+/// an ObjectId.
 class _ManualAssignDialog extends StatefulWidget {
   const _ManualAssignDialog({required this.tripId});
   final String tripId;
@@ -260,12 +404,53 @@ class _ManualAssignDialog extends StatefulWidget {
 }
 
 class _ManualAssignDialogState extends State<_ManualAssignDialog> {
-  final _carrierIdCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
   final _commissionValueCtrl = TextEditingController();
+  String? _carrierId;
   String _commissionMode = 'percent';
   bool _saving = false;
   String? _error;
+
+  @override
+  void dispose() {
+    _priceCtrl.dispose();
+    _commissionValueCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_carrierId == null) {
+      setState(() => _error = tr(context, 'select_carrier_hint'));
+      return;
+    }
+    final price = double.tryParse(_priceCtrl.text.trim());
+    if (price == null || price <= 0) {
+      setState(() => _error = tr(context, 'required_field'));
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await TripService().assignCarrier(widget.tripId, {
+        'carrierId': _carrierId,
+        'agreedPrice': price,
+        'commissionMode': _commissionMode,
+        if (_commissionValueCtrl.text.trim().isNotEmpty)
+          'commissionValue': double.tryParse(_commissionValueCtrl.text.trim()),
+      });
+      if (mounted) Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.message;
+          _saving = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -276,17 +461,20 @@ class _ManualAssignDialogState extends State<_ManualAssignDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _carrierIdCtrl,
-              decoration: InputDecoration(labelText: tr(context, 'select_carrier')),
+            EntityPicker(
+              label: tr(context, 'select_carrier'),
+              loader: AdminLookups.carriers,
+              value: _carrierId,
+              emptyMessage: tr(context, 'no_carriers'),
+              onChanged: (v) => setState(() => _carrierId = v),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             TextField(
               controller: _priceCtrl,
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(labelText: tr(context, 'agreed_price')),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _commissionMode,
               decoration: InputDecoration(labelText: tr(context, 'commission_mode')),
@@ -297,51 +485,36 @@ class _ManualAssignDialogState extends State<_ManualAssignDialog> {
               ],
               onChanged: (v) => setState(() => _commissionMode = v ?? 'percent'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             TextField(
               controller: _commissionValueCtrl,
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(labelText: tr(context, 'commission_value')),
             ),
             if (_error != null) ...[
-              const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(color: AppColors.halte)),
+              const SizedBox(height: 10),
+              Text(_error!, style: const TextStyle(color: AppColors.halte, fontSize: 13)),
             ],
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(tr(context, 'cancel'))),
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+          child: Text(tr(context, 'cancel')),
+        ),
         ElevatedButton(
-          onPressed: _saving
-              ? null
-              : () async {
-                  setState(() {
-                    _saving = true;
-                    _error = null;
-                  });
-                  try {
-                    await TripService().assignCarrier(widget.tripId, {
-                      'carrierId': _carrierIdCtrl.text.trim(),
-                      'agreedPrice': double.tryParse(_priceCtrl.text.trim()) ?? 0,
-                      'commissionMode': _commissionMode,
-                      'commissionValue': double.tryParse(_commissionValueCtrl.text.trim()) ?? 0,
-                    });
-                    if (mounted) Navigator.of(context).pop();
-                  } catch (e) {
-                    setState(() {
-                      _error = tr(context, 'error_generic');
-                      _saving = false;
-                    });
-                  }
-                },
-          child: Text(tr(context, 'confirm')),
+          onPressed: _saving ? null : _submit,
+          child: _saving
+              ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(tr(context, 'confirm')),
         ),
       ],
     );
   }
 }
 
+/// Reassignment. Driver and vehicle lists follow the selected carrier.
 class _ReassignDialog extends StatefulWidget {
   const _ReassignDialog({required this.tripId});
   final String tripId;
@@ -351,57 +524,101 @@ class _ReassignDialog extends StatefulWidget {
 }
 
 class _ReassignDialogState extends State<_ReassignDialog> {
-  final _carrierIdCtrl = TextEditingController();
-  final _driverIdCtrl = TextEditingController();
-  final _vehicleIdCtrl = TextEditingController();
+  String? _carrierId;
+  String? _driverId;
+  String? _vehicleId;
   bool _saving = false;
   String? _error;
 
+  Future<void> _submit() async {
+    if (_carrierId == null && _driverId == null && _vehicleId == null) {
+      setState(() => _error = tr(context, 'required_field'));
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await ApiClient.instance.put('/trips/${widget.tripId}/reassign', data: {
+        if (_carrierId != null) 'carrierId': _carrierId,
+        if (_driverId != null) 'driverId': _driverId,
+        if (_vehicleId != null) 'vehicleId': _vehicleId,
+      });
+      if (mounted) Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.message;
+          _saving = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final carrierId = _carrierId;
     return AlertDialog(
       title: Text(tr(context, 'reassign_trip')),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(controller: _carrierIdCtrl, decoration: InputDecoration(labelText: tr(context, 'select_carrier'))),
-            const SizedBox(height: 8),
-            TextField(controller: _driverIdCtrl, decoration: InputDecoration(labelText: tr(context, 'select_driver'))),
-            const SizedBox(height: 8),
-            TextField(controller: _vehicleIdCtrl, decoration: InputDecoration(labelText: tr(context, 'select_vehicle'))),
+            EntityPicker(
+              label: tr(context, 'select_carrier'),
+              loader: AdminLookups.carriers,
+              value: _carrierId,
+              emptyMessage: tr(context, 'no_carriers'),
+              onChanged: (v) => setState(() {
+                _carrierId = v;
+                // The previous crew belongs to the old carrier.
+                _driverId = null;
+                _vehicleId = null;
+              }),
+            ),
+            const SizedBox(height: 12),
+            // Keyed on the carrier so the lists reload when it changes.
+            EntityPicker(
+              key: ValueKey('drivers-$carrierId'),
+              label: tr(context, 'select_driver'),
+              loader: () =>
+                  carrierId == null ? Future.value(<PickerOption>[]) : AdminLookups.driversOf(carrierId),
+              value: _driverId,
+              enabled: carrierId != null,
+              emptyMessage: tr(context, 'select_carrier_hint'),
+              onChanged: (v) => setState(() => _driverId = v),
+            ),
+            const SizedBox(height: 12),
+            EntityPicker(
+              key: ValueKey('vehicles-$carrierId'),
+              label: tr(context, 'select_vehicle'),
+              loader: () => carrierId == null
+                  ? Future.value(<PickerOption>[])
+                  : AdminLookups.vehiclesOf(carrierId),
+              value: _vehicleId,
+              enabled: carrierId != null,
+              emptyMessage: tr(context, 'select_carrier_hint'),
+              onChanged: (v) => setState(() => _vehicleId = v),
+            ),
             if (_error != null) ...[
-              const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(color: AppColors.halte)),
+              const SizedBox(height: 10),
+              Text(_error!, style: const TextStyle(color: AppColors.halte, fontSize: 13)),
             ],
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(tr(context, 'cancel'))),
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+          child: Text(tr(context, 'cancel')),
+        ),
         ElevatedButton(
-          onPressed: _saving
-              ? null
-              : () async {
-                  setState(() {
-                    _saving = true;
-                    _error = null;
-                  });
-                  try {
-                    await ApiClient.instance.put('/trips/${widget.tripId}/reassign', data: {
-                      'carrierId': _carrierIdCtrl.text.trim(),
-                      'driverId': _driverIdCtrl.text.trim(),
-                      'vehicleId': _vehicleIdCtrl.text.trim(),
-                    });
-                    if (mounted) Navigator.of(context).pop();
-                  } catch (e) {
-                    setState(() {
-                      _error = tr(context, 'error_generic');
-                      _saving = false;
-                    });
-                  }
-                },
-          child: Text(tr(context, 'confirm')),
+          onPressed: _saving ? null : _submit,
+          child: _saving
+              ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(tr(context, 'confirm')),
         ),
       ],
     );

@@ -3,43 +3,35 @@ import '../theme/app_colors.dart';
 import '../l10n/app_strings.dart';
 
 /// Soft pill status chip — color communicates state only, never used for actions.
+///
+/// Labels come from the `status_*` translation keys, so the badge follows the
+/// selected language. It previously hardcoded a French-only map, which left the
+/// Arabic and English UIs showing French text.
 class StatusBadge extends StatelessWidget {
-  const StatusBadge({super.key, required this.status});
+  const StatusBadge({super.key, required this.status, this.compact = false});
 
   final String status;
-
-  static const Map<String, String> _labelsFr = {
-    'draft': 'Brouillon',
-    'published': 'Publiée',
-    'offers_received': 'Offres reçues',
-    'assigned': 'Attribuée',
-    'driver_assigned': 'Chauffeur assigné',
-    'en_route_pickup': 'Vers chargement',
-    'loaded': 'Chargé',
-    'en_route_delivery': 'En route',
-    'arrived_delivery': 'Arrivé',
-    'delivered': 'Livré',
-    'pod_confirmed': 'Confirmé',
-    'invoiced': 'Facturée',
-    'paid': 'Payée',
-    'closed': 'Clôturée',
-    'cancelled': 'Annulée',
-    'disputed': 'Litige',
-    'suspended': 'Suspendue',
-  };
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final color = AppColors.statusColor(status);
+    // `tr` falls back to the raw key, so an unknown status degrades to the code
+    // itself rather than an empty chip.
+    final label = tr(context, 'status_$status');
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 4 : 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        _labelsFr[status] ?? status,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700),
+        label == 'status_$status' ? status : label,
+        style: TextStyle(
+          color: color,
+          fontSize: compact ? 11 : 12,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

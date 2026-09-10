@@ -5,6 +5,7 @@ import '../../core/models/trip.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/status_badge.dart';
 
 /// Dispute thread view (ADM-13): messages + post message + admin resolve action.
@@ -131,8 +132,8 @@ class _DisputeDetailScreenState extends State<DisputeDetailScreen> {
                                     constraints: const BoxConstraints(maxWidth: 420),
                                     decoration: BoxDecoration(
                                       color: AppColors.white,
-                                      border: Border.all(color: const Color(0xFFE2E6E8)),
-                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: AppColors.border),
+                                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,

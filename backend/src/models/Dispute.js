@@ -22,4 +22,7 @@ const disputeSchema = new Schema(
   { timestamps: true }
 );
 
+disputeSchema.index({ tripId: 1 });
+disputeSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Dispute', disputeSchema);

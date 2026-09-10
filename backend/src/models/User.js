@@ -82,6 +82,9 @@ userSchema.methods.toSafeJSON = function toSafeJSON() {
   return obj;
 };
 
+userSchema.index({ role: 1, status: 1 });
+userSchema.index({ carrierId: 1 });
+
 module.exports = mongoose.model('User', userSchema);
 module.exports.USER_ROLES = USER_ROLES;
 module.exports.ADMIN_SUBROLES = ADMIN_SUBROLES;

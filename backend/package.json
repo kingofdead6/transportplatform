@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/utils/seed.js"
+    "seed": "node src/utils/seed.js",
+    "seed:admin": "node src/utils/seedAdmin.js",
+    "test:e2e": "node test/e2e.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -26,6 +28,8 @@
     "express-rate-limit": "^7.4.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7"
+    "mongodb-memory-server": "^11.2.0",
+    "nodemon": "^3.1.7",
+    "supertest": "^7.0.0"
   }
 }

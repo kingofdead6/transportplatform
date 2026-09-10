@@ -29,6 +29,7 @@ async function run() {
 
   const shipper = await User.create({
     phone: '+213500000002',
+    password: 'demo123',
     role: 'shipper',
     fullName: 'Sassi Karim',
     companyName: 'SARL Karim Matériaux',
@@ -41,6 +42,7 @@ async function run() {
 
   const carrier = await User.create({
     phone: '+213500000003',
+    password: 'demo123',
     role: 'carrier',
     fullName: 'Boudiaf Transport',
     companyName: 'Boudiaf Transport SARL',
@@ -53,6 +55,7 @@ async function run() {
 
   const driver = await User.create({
     phone: '+213500000004',
+    password: 'demo123',
     role: 'driver',
     fullName: 'Ahmed Chauffeur',
     carrierId: carrier._id,
@@ -89,7 +92,9 @@ async function run() {
 
   console.log('Seed complete.');
   console.log('Admin login: +213500000001 / admin123');
-  console.log('Shipper/Carrier/Driver use OTP login (check console for dev OTP codes).');
+  console.log('Shipper: +213500000002 / demo123');
+  console.log('Carrier: +213500000003 / demo123');
+  console.log('Driver:  +213500000004 / demo123');
 
   await mongoose.connection.close();
   process.exit(0);

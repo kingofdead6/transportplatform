@@ -50,6 +50,24 @@ class TripOffer {
       );
 }
 
+/// An incident filed by the driver or carrier during a mission (CHA-10).
+/// The backend field is `incidentReports`; reading `incidents` returned nothing.
+class TripIncident {
+  TripIncident({required this.type, this.note, this.reportedAt, this.photos = const []});
+
+  final String type;
+  final String? note;
+  final DateTime? reportedAt;
+  final List<String> photos;
+
+  factory TripIncident.fromJson(Map<String, dynamic> json) => TripIncident(
+        type: json['type'] ?? '',
+        note: json['note'],
+        reportedAt: json['reportedAt'] != null ? DateTime.tryParse(json['reportedAt']) : null,
+        photos: (json['photos'] as List? ?? []).map((e) => e.toString()).toList(),
+      );
+}
+
 class Trip {
   Trip({
     required this.id,
@@ -76,6 +94,13 @@ class Trip {
     this.lastKnownLocation,
     this.specialInstructions,
     this.commissionAmount,
+    this.shipperPhone,
+    this.carrierPhone,
+    this.driverPhone,
+    this.hasReview = false,
+    this.incidents = const [],
+    this.invoiceId,
+    this.disputeId,
   });
 
   final String id;
@@ -103,6 +128,17 @@ class Trip {
   final String? specialInstructions;
   final double? commissionAmount;
 
+  /// Contact numbers come from the populated shipper/carrier/driver documents.
+  /// Without these the driver's "call shipper" action had no number to dial.
+  final String? shipperPhone;
+  final String? carrierPhone;
+  final String? driverPhone;
+
+  final bool hasReview;
+  final List<TripIncident> incidents;
+  final String? invoiceId;
+  final String? disputeId;
+
   factory Trip.fromJson(Map<String, dynamic> json) {
     String? popName(dynamic v) {
       if (v is Map) return v['companyName'] ?? v['fullName'];
@@ -110,8 +146,21 @@ class Trip {
     }
 
     String? popId(dynamic v) {
-      if (v is Map) return v['_id'];
+      if (v is Map) return v['_id'] as String?;
       return v as String?;
+    }
+
+    String? popPhone(dynamic v) {
+      if (v is Map) return v['phone'] as String?;
+      return null;
+    }
+
+    // A missing/empty location object must stay null so callers can tell
+    // "no position reported yet" from a real coordinate.
+    TripLocation? optionalLocation(dynamic v) {
+      if (v is! Map) return null;
+      if (v['lat'] == null || v['lng'] == null) return null;
+      return TripLocation.fromJson(Map<String, dynamic>.from(v));
     }
 
     return Trip(
@@ -139,9 +188,18 @@ class Trip {
       requestedDeliveryDate: json['requestedDeliveryDate'] != null
           ? DateTime.tryParse(json['requestedDeliveryDate'])
           : null,
-      lastKnownLocation: TripLocation.fromJson(json['lastKnownLocation']),
+      lastKnownLocation: optionalLocation(json['lastKnownLocation']),
       specialInstructions: json['specialInstructions'],
       commissionAmount: (json['commission']?['computedAmount'] as num?)?.toDouble(),
+      shipperPhone: popPhone(json['shipperId']),
+      carrierPhone: popPhone(json['assignedCarrierId']),
+      driverPhone: popPhone(json['assignedDriverId']),
+      hasReview: json['review']?['createdAt'] != null,
+      incidents: (json['incidentReports'] as List? ?? [])
+          .map((e) => TripIncident.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      invoiceId: popId(json['invoiceId']),
+      disputeId: popId(json['disputeId']),
     );
   }
 }

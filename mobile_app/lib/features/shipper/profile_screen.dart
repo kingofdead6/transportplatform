@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/algeria_wilayas.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/widgets/change_password_sheet.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/auth_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/widgets/status_badge.dart';
 
 /// Section 5.1: shipper company profile — editable via PUT /api/users/me.
@@ -127,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              value: _wilaya,
+              initialValue: _wilaya,
               decoration: InputDecoration(labelText: tr(context, 'wilaya')),
               items: algeriaWilayas.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
               onChanged: (v) => setState(() => _wilaya = v),
@@ -148,6 +148,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: _saving
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                   : Text(tr(context, 'save')),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => ChangePasswordSheet.show(context),
+              icon: const Icon(Icons.lock_outline_rounded, size: 18),
+              label: Text(tr(context, 'change_password')),
             ),
             const SizedBox(height: 24),
           ],

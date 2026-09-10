@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/widgets/notifications_screen.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/locale_service.dart';
 import 'trip_list_screen.dart';
@@ -48,6 +49,7 @@ class _ShipperHomeState extends State<ShipperHome> {
       appBar: AppBar(
         title: Text(titles[_index]),
         actions: [
+          const NotificationBell(),
           const _LanguageSwitcher(),
           IconButton(
             tooltip: tr(context, 'logout'),

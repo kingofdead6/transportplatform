@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/services/trip_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import 'mission_action_button.dart';
 
 /// CHA-10: secondary/low-weight flow reached via a small icon, not the main CTA.
@@ -87,8 +88,8 @@ class _IncidentScreenState extends State<IncidentScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFE2E6E8)),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  boxShadow: AppTheme.softShadow,
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
@@ -122,7 +123,7 @@ class _IncidentScreenState extends State<IncidentScreen> {
               if (_photo != null) ...[
                 const SizedBox(height: 12),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   child: Image.file(File(_photo!.path), height: 140, fit: BoxFit.cover),
                 ),
               ],

@@ -3,6 +3,36 @@ const Document = require('../models/Document');
 const Trip = require('../models/Trip');
 const { generateBonPdf } = require('../utils/pdfGenerator');
 
+const sameId = (a, b) => a != null && b != null && String(a) === String(b);
+
+/// Trip documents carry POD photos and signed receipts, so they are readable and
+/// writable only by the parties on the trip (plus admin). These checks were absent.
+function isTripParticipant(trip, user) {
+  if (user.role === 'admin') return true;
+  return (
+    sameId(trip.shipperId, user._id) ||
+    sameId(trip.assignedCarrierId, user._id) ||
+    sameId(trip.assignedDriverId, user._id)
+  );
+}
+
+async function loadTripFor(req, res, { requireDriver = false } = {}) {
+  const trip = await Trip.findById(req.params.id);
+  if (!trip) {
+    res.status(404);
+    throw new Error('Trip not found');
+  }
+  if (requireDriver && !sameId(trip.assignedDriverId, req.user._id) && req.user.role !== 'admin') {
+    res.status(403);
+    throw new Error('Only the assigned driver can upload this document');
+  }
+  if (!isTripParticipant(trip, req.user)) {
+    res.status(403);
+    throw new Error('Not authorized for this trip');
+  }
+  return trip;
+}
+
 // @desc System-generated "bon de transport" at assignment time
 async function generateBonTransport(trip) {
   const result = await generateBonPdf({
@@ -53,11 +83,7 @@ async function generateBonLivraison(trip) {
 
 // @route POST /api/trips/:id/documents/bon-transport
 const issueBonTransport = asyncHandler(async (req, res) => {
-  const trip = await Trip.findById(req.params.id);
-  if (!trip) {
-    res.status(404);
-    throw new Error('Trip not found');
-  }
+  const trip = await loadTripFor(req, res);
   const doc = await generateBonTransport(trip);
   trip.documentsIds.push(doc._id);
   await trip.save();
@@ -66,11 +92,7 @@ const issueBonTransport = asyncHandler(async (req, res) => {
 
 // @route POST /api/trips/:id/documents/bon-livraison
 const issueBonLivraison = asyncHandler(async (req, res) => {
-  const trip = await Trip.findById(req.params.id);
-  if (!trip) {
-    res.status(404);
-    throw new Error('Trip not found');
-  }
+  const trip = await loadTripFor(req, res);
   const doc = await generateBonLivraison(trip);
   trip.documentsIds.push(doc._id);
   await trip.save();
@@ -80,11 +102,7 @@ const issueBonLivraison = asyncHandler(async (req, res) => {
 // @desc Driver uploads POD: photos + signature captured on screen (CHA-08)
 // @route POST /api/trips/:id/documents/pod
 const uploadPod = asyncHandler(async (req, res) => {
-  const trip = await Trip.findById(req.params.id);
-  if (!trip) {
-    res.status(404);
-    throw new Error('Trip not found');
-  }
+  const trip = await loadTripFor(req, res, { requireDriver: true });
   const files = req.files || [];
   if (!files.length) {
     res.status(400);
@@ -113,12 +131,12 @@ const uploadPod = asyncHandler(async (req, res) => {
 // @desc Upload goods photos (EXP-12, CHA-05)
 // @route POST /api/trips/:id/documents/photos
 const uploadGoodsPhotos = asyncHandler(async (req, res) => {
-  const trip = await Trip.findById(req.params.id);
-  if (!trip) {
-    res.status(404);
-    throw new Error('Trip not found');
-  }
+  const trip = await loadTripFor(req, res);
   const files = req.files || [];
+  if (!files.length) {
+    res.status(400);
+    throw new Error('At least one photo required');
+  }
   const docs = await Promise.all(
     files.map((f) =>
       Document.create({ tripId: trip._id, type: 'goods_photo', url: f.path, publicId: f.filename })
@@ -132,6 +150,7 @@ const uploadGoodsPhotos = asyncHandler(async (req, res) => {
 
 // @route GET /api/trips/:id/documents
 const listTripDocuments = asyncHandler(async (req, res) => {
+  await loadTripFor(req, res);
   const docs = await Document.find({ tripId: req.params.id }).sort({ createdAt: -1 });
   res.json(docs);
 });

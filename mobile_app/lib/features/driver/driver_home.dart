@@ -8,12 +8,15 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/widgets/notifications_screen.dart';
 import '../../core/models/trip.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/socket_service.dart';
 import '../../core/services/trip_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/change_password_sheet.dart';
 import '../../core/widgets/empty_state.dart';
 import 'incident_screen.dart';
 import 'mission_action_button.dart';
@@ -170,6 +173,10 @@ class _DriverHomeState extends State<DriverHome> {
         SocketService.instance.sendLocation(trip.id, pos.latitude, pos.longitude);
       }
       await _loadMission();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -215,6 +222,10 @@ class _DriverHomeState extends State<DriverHome> {
         SocketService.instance.sendLocation(trip.id, pos.latitude, pos.longitude);
       }
       await _loadMission();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -267,6 +278,7 @@ class _DriverHomeState extends State<DriverHome> {
       appBar: AppBar(
         title: Text(tr(context, 'today_mission')),
         actions: [
+          const NotificationBell(),
           if (_trip != null)
             IconButton(
               icon: const Icon(Icons.warning_amber_rounded),
@@ -278,10 +290,37 @@ class _DriverHomeState extends State<DriverHome> {
             tooltip: tr(context, 'mission_history'),
             onPressed: _openHistory,
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: tr(context, 'logout'),
-            onPressed: () => auth.logout(),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              if (value == 'password') {
+                ChangePasswordSheet.show(context);
+              } else if (value == 'logout') {
+                auth.logout();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'password',
+                child: Row(
+                  children: [
+                    const Icon(Icons.lock_outline_rounded, size: 18, color: AppColors.acier),
+                    const SizedBox(width: 10),
+                    Text(tr(context, 'change_password')),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, size: 18, color: AppColors.acier),
+                    const SizedBox(width: 10),
+                    Text(tr(context, 'logout')),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -401,7 +440,7 @@ class _RouteHeader extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.bitume,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,45 +470,81 @@ class _ContactCard extends StatelessWidget {
   final Trip trip;
   final void Function(String phone) onCall;
 
-  // NOTE: the Trip model (lib/core/models/trip.dart) does not currently expose a
-  // shipper phone number field (only shipperName, populated from shipperId). The call
-  // button is wired up and ready — pass a real number here once the backend/Trip model
-  // surfaces one (e.g. trip.shipperPhone) so `onCall` can launch the tel: intent.
-  String? get _shipperPhone => null;
-
   @override
   Widget build(BuildContext context) {
-    final shipperName = trip.shipperName ?? tr(context, 'role_shipper');
-    final phone = _shipperPhone;
+    // The shipper's number is populated on the trip payload; this card
+    // previously hardcoded it to null, so the call button never appeared.
+    final contacts = <_Contact>[
+      if (trip.shipperPhone != null)
+        _Contact(
+          icon: Icons.business_outlined,
+          name: trip.shipperName ?? tr(context, 'role_shipper'),
+          phone: trip.shipperPhone!,
+        ),
+      if (trip.carrierPhone != null)
+        _Contact(
+          icon: Icons.local_shipping_outlined,
+          name: trip.carrierName ?? tr(context, 'role_carrier'),
+          phone: trip.carrierPhone!,
+        ),
+    ];
+
+    if (contacts.isEmpty) return const SizedBox.shrink();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE2E6E8)),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        boxShadow: AppTheme.softShadow,
       ),
-      child: Row(
+      child: Column(
         children: [
-          const Icon(Icons.person_outline, color: AppColors.acier),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              shipperName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis,
+          for (var i = 0; i < contacts.length; i++) ...[
+            if (i > 0) const Divider(height: 20),
+            Row(
+              children: [
+                Icon(contacts[i].icon, color: AppColors.acier, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        contacts[i].name,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        contacts[i].phone,
+                        style: const TextStyle(color: AppColors.acier, fontSize: 12.5),
+                      ),
+                    ],
+                  ),
+                ),
+                // A 48px tap target: the driver uses this one-handed, in a cab.
+                IconButton(
+                  onPressed: () => onCall(contacts[i].phone),
+                  icon: const Icon(Icons.call),
+                  color: AppColors.convoi,
+                  iconSize: 24,
+                  tooltip: tr(context, 'call'),
+                ),
+              ],
             ),
-          ),
-          if (phone != null)
-            OutlinedButton.icon(
-              onPressed: () => onCall(phone),
-              icon: const Icon(Icons.call, size: 18),
-              label: Text(tr(context, 'call_shipper')),
-            ),
+          ],
         ],
       ),
     );
   }
+}
+
+class _Contact {
+  const _Contact({required this.icon, required this.name, required this.phone});
+  final IconData icon;
+  final String name;
+  final String phone;
 }
 
 class _InstructionsCard extends StatelessWidget {
@@ -487,8 +562,8 @@ class _InstructionsCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE2E6E8)),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -516,7 +591,7 @@ class _CompletionCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.convoi.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         border: Border.all(color: AppColors.convoi.withValues(alpha: 0.4)),
       ),
       child: Column(

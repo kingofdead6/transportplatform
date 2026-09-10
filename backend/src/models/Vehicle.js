@@ -43,5 +43,8 @@ const vehicleSchema = new Schema(
   { timestamps: true }
 );
 
+vehicleSchema.index({ carrierId: 1 });
+vehicleSchema.index({ 'documents.expiresAt': 1 });
+
 module.exports = mongoose.model('Vehicle', vehicleSchema);
 module.exports.VEHICLE_TYPES = VEHICLE_TYPES;

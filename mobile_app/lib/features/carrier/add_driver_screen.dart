@@ -17,6 +17,8 @@ class _AddDriverScreenState extends State<AddDriverScreen> {
   final _nameController = TextEditingController();
   final _licenseNumberController = TextEditingController();
   final _licenseCategoryController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
   DateTime? _licenseExpiresAt;
   bool _loading = false;
   String? _error;
@@ -42,6 +44,7 @@ class _AddDriverScreenState extends State<AddDriverScreen> {
       await ApiClient.instance.post('/users/drivers', data: {
         'phone': _phoneController.text.trim(),
         'fullName': _nameController.text.trim(),
+        'password': _passwordController.text,
         if (_licenseNumberController.text.trim().isNotEmpty)
           'licenseNumber': _licenseNumberController.text.trim(),
         if (_licenseCategoryController.text.trim().isNotEmpty)
@@ -64,6 +67,7 @@ class _AddDriverScreenState extends State<AddDriverScreen> {
     _nameController.dispose();
     _licenseNumberController.dispose();
     _licenseCategoryController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -87,6 +91,31 @@ class _AddDriverScreenState extends State<AddDriverScreen> {
               keyboardType: TextInputType.phone,
               decoration: InputDecoration(labelText: tr(context, 'phone')),
               validator: (v) => (v == null || v.trim().isEmpty) ? tr(context, 'required_field') : null,
+            ),
+            const SizedBox(height: 12),
+            // Drivers sign in with phone + password like every other role. The
+            // account used to be created without one, so it could never log in.
+            TextFormField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: tr(context, 'password'),
+                helperText: tr(context, 'driver_password_hint'),
+                helperMaxLines: 2,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    color: AppColors.acier,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+              validator: (v) {
+                if (v == null || v.isEmpty) return tr(context, 'required_field');
+                if (v.length < 6) return tr(context, 'password_too_short');
+                return null;
+              },
             ),
             const SizedBox(height: 12),
             TextFormField(

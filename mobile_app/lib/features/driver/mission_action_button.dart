@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 
 /// Section 11.6: the ONE 64px-tall, full-width primary action for the driver screens.
 /// Always Sangle regardless of what the action is — status colors never appear here.
@@ -31,7 +32,7 @@ class MissionActionButton extends StatelessWidget {
           disabledBackgroundColor: AppColors.sangle.withValues(alpha: 0.6),
           foregroundColor: AppColors.bitume,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
         ),
         child: loading
             ? const SizedBox(

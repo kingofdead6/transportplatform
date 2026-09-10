@@ -171,6 +171,9 @@ tripSchema.index({ status: 1 });
 tripSchema.index({ shipperId: 1 });
 tripSchema.index({ assignedCarrierId: 1 });
 tripSchema.index({ 'pickup.wilaya': 1, 'dropoff.wilaya': 1 });
+tripSchema.index({ assignedDriverId: 1 });
+tripSchema.index({ assignedVehicleId: 1 });
+tripSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Trip', tripSchema);
 module.exports.TRIP_STATUSES = TRIP_STATUSES;
