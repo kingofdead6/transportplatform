@@ -1,0 +1,687 @@
+/* ----------------------------------------------------------------- layout */
+
+/* Nothing should ever push the page sideways on a phone. */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+.shell {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.section {
+  padding: 96px 0;
+}
+
+.section--tight {
+  padding: 64px 0;
+}
+
+.section__head {
+  max-width: 660px;
+  margin-bottom: 48px;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sangle);
+  margin-bottom: 14px;
+}
+
+.section__title {
+  font-size: clamp(26px, 4vw, 38px);
+  font-weight: 800;
+}
+
+.section__sub {
+  margin-top: 14px;
+  font-size: 16.5px;
+  color: var(--acier);
+  line-height: 1.6;
+}
+
+/* -------------------------------------------------------------------- nav */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(247, 248, 250, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.nav--scrolled {
+  border-bottom-color: var(--border);
+  background: rgba(247, 248, 250, 0.95);
+}
+
+.nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 68px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.brand__mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--sangle);
+  color: var(--white);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 14px rgba(255, 138, 52, 0.32);
+  flex-shrink: 0;
+}
+
+.nav__links {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.nav__link {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--acier);
+  transition: color 0.15s ease;
+}
+
+.nav__link:hover {
+  color: var(--bitume);
+}
+
+/* ----------------------------------------------------------------- button */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 22px;
+  height: 50px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn--primary {
+  background: var(--sangle);
+  color: var(--white);
+  box-shadow: 0 8px 20px rgba(255, 138, 52, 0.28);
+}
+
+.btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(255, 138, 52, 0.36);
+}
+
+.btn--ghost {
+  background: var(--white);
+  color: var(--bitume);
+  border-color: var(--border);
+}
+
+.btn--ghost:hover {
+  border-color: var(--acier);
+}
+
+.btn--sm {
+  height: 42px;
+  padding: 0 17px;
+  font-size: 14px;
+}
+
+/* A disabled-looking CTA while the APK link is still a placeholder — better
+   than a button that silently goes nowhere. */
+.btn--disabled {
+  background: var(--surface-alt);
+  color: var(--acier);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn--disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------------- hero */
+
+.hero {
+  padding: 72px 0 88px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Soft accent wash behind the hero, kept well below the text. */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -220px;
+  right: -160px;
+  width: 620px;
+  height: 620px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 138, 52, 0.13), transparent 65%);
+  pointer-events: none;
+}
+
+.hero__grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 60px;
+  align-items: center;
+  position: relative;
+}
+
+.hero__title {
+  font-size: clamp(30px, 6vw, 58px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  overflow-wrap: break-word;
+}
+
+.hero__title em {
+  font-style: normal;
+  color: var(--sangle);
+}
+
+.hero__sub {
+  margin-top: 20px;
+  font-size: 17.5px;
+  line-height: 1.65;
+  color: var(--acier);
+  max-width: 30em;
+  overflow-wrap: break-word;
+}
+
+.hero__cta {
+  margin-top: 34px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.hero__note {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--acier);
+}
+
+.hero__stats {
+  margin-top: 44px;
+  display: flex;
+  gap: 36px;
+  flex-wrap: wrap;
+}
+
+.stat__value {
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.stat__label {
+  font-size: 12.5px;
+  color: var(--acier);
+  margin-top: 2px;
+}
+
+/* -------------------------------------------------------------- phone mock */
+
+.phone {
+  width: 268px;
+  margin: 0 auto;
+  background: var(--bitume);
+  border-radius: 34px;
+  padding: 9px;
+  box-shadow: var(--shadow-lift);
+}
+
+.phone__screen {
+  background: var(--beton);
+  border-radius: 26px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.phone__bar {
+  background: var(--bitume);
+  color: var(--white);
+  padding: 13px 15px 15px;
+}
+
+.phone__route {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.phone__ref {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 3px;
+}
+
+.phone__body {
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.mock-card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: 12px;
+}
+
+.mock-card__label {
+  font-size: 10.5px;
+  color: var(--acier);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.mock-card__value {
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 3px;
+}
+
+.mock-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.mock-step {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--acier);
+}
+
+.mock-step__dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+}
+
+.mock-step--done .mock-step__dot {
+  background: var(--convoi);
+  border-color: var(--convoi);
+}
+
+.mock-step--now .mock-step__dot {
+  border-color: var(--sangle);
+  box-shadow: 0 0 0 3px rgba(255, 138, 52, 0.18);
+}
+
+.mock-step--done,
+.mock-step--now {
+  color: var(--bitume);
+  font-weight: 600;
+}
+
+.mock-action {
+  margin-top: 4px;
+  background: var(--sangle);
+  color: var(--white);
+  border-radius: var(--radius-md);
+  text-align: center;
+  padding: 15px;
+  font-weight: 700;
+  font-size: 14.5px;
+  box-shadow: 0 8px 18px rgba(255, 138, 52, 0.3);
+}
+
+/* --------------------------------------------------------------- features */
+
+.grid {
+  display: grid;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid--4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: 26px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+}
+
+.card__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  background: rgba(255, 138, 52, 0.12);
+  color: var(--sangle);
+}
+
+.card__title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.card__text {
+  margin-top: 8px;
+  font-size: 14.5px;
+  color: var(--acier);
+  line-height: 1.6;
+}
+
+.card__list {
+  margin: 16px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.card__list li {
+  font-size: 13.5px;
+  color: var(--acier);
+  padding-left: 19px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.card__list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--convoi);
+}
+
+/* ------------------------------------------------------------ roles strip */
+
+.roles {
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ------------------------------------------------------------- lifecycle */
+
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.flow__step {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flow__num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  color: var(--acier);
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+/* -------------------------------------------------------------- download */
+
+.download {
+  background: var(--bitume);
+  color: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 56px 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.download::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 138, 52, 0.22), transparent 62%);
+  pointer-events: none;
+}
+
+.download > * {
+  position: relative;
+}
+
+.download__title {
+  font-size: clamp(26px, 4vw, 34px);
+  font-weight: 800;
+}
+
+.download__sub {
+  margin-top: 14px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 16px;
+  max-width: 46em;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+.download__cta {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.download .btn--disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.download .btn--ghost {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--white);
+}
+
+.download .btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.download__meta {
+  margin-top: 18px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ---------------------------------------------------------------- footer */
+
+.footer {
+  padding: 40px 0 52px;
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+
+.footer__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.footer__copy {
+  font-size: 13.5px;
+  color: var(--acier);
+}
+
+.footer__links {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.footer__links a {
+  font-size: 13.5px;
+  color: var(--acier);
+  transition: color 0.15s ease;
+}
+
+.footer__links a:hover {
+  color: var(--bitume);
+}
+
+/* --------------------------------------------------------------- badges */
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.badge {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--acier);
+}
+
+.badge--accent {
+  background: rgba(255, 138, 52, 0.13);
+  color: #b85e12; /* darkened for contrast on the tint */
+}
+
+.badge--ok {
+  background: rgba(23, 166, 115, 0.13);
+  color: #0f7a53;
+}
+
+/* ------------------------------------------------------------ responsive */
+
+@media (max-width: 900px) {
+  .hero__grid {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+  .hero__visual {
+    order: -1;
+  }
+  .grid--3,
+  .grid--4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .nav__links {
+    display: none;
+  }
+  .section {
+    padding: 72px 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .grid--3,
+  .grid--4 {
+    grid-template-columns: 1fr;
+  }
+  .shell {
+    padding: 0 18px;
+  }
+  .download {
+    padding: 40px 22px;
+  }
+  .hero__stats {
+    gap: 24px;
+  }
+  /* Full-width CTAs in page sections only — never the compact nav button,
+     which would otherwise stretch the sticky header past the viewport. */
+  .hero__cta .btn,
+  .download__cta .btn {
+    width: 100%;
+  }
+  .hero__cta,
+  .download__cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .brand {
+    font-size: 15.5px;
+    gap: 9px;
+  }
+  .nav__inner {
+    gap: 12px;
+  }
+  .btn--sm {
+    padding: 0 13px;
+  }
+}
