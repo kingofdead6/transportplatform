@@ -11,7 +11,7 @@ export const config = {
   tagline: 'Transport & Logistique',
 
   // ---- Primary call to action -------------------------------------------
-  apkUrl: '#', // <-- replace with e.g. 'https://.../prosim-planat.apk'
+  apkUrl: 'https://web-prm1.vercel.app/prosimplanat.apk', 
   apkVersion: '1.0.0',
   apkSizeMb: null, // e.g. 24 — shown next to the download button when set
 
