@@ -9,7 +9,8 @@
     "dev": "nodemon src/server.js",
     "seed": "node src/utils/seed.js",
     "seed:admin": "node src/utils/seedAdmin.js",
-    "test:e2e": "node test/e2e.js"
+    "test:e2e": "node test/e2e.js",
+    "seed:demo": "node src/utils/seedDemoData.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
